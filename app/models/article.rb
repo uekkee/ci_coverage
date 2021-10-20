@@ -6,4 +6,8 @@ class Article < ApplicationRecord
   def untested_method
     'hello world'
   end
+
+  def yet_another_untested_method
+    'government for the people'
+  end
 end
