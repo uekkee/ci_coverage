@@ -16,6 +16,7 @@ commands:
             - dependencies-{{ checksum "Gemfile.lock" }}
             - dependencies-
       - run: |
+          sudo apt-get install cmake
           gem install bundler -v 2.2.22
           bundle config set path vendor/bundle
           bundle install --jobs=4 --retry=3
@@ -40,6 +41,17 @@ commands:
               $(circleci tests glob "spec/**/*_spec.rb" | circleci tests split)
       - store_test_results:
           path: test_results
+      - run:
+          name: Store coverage report
+          command: |
+            mkdir -p /tmp/coverage
+            mv coverage/lcov/*.lcov /tmp/coverage/
+      - persist_to_workspace:
+          root: /tmp/coverage
+          paths: .
+      - store_artifacts:
+          path: /tmp/coverage
+          destination: coverage
 
 references:
   attach_workspace: &attach_workspace
@@ -64,6 +76,24 @@ jobs:
       - store_test_results:
             path: tmp/test-results
 
+  analyse_coverage:
+    docker:
+      - image: circleci/ruby:3.0.2-node-browsers
+    steps:
+      - checkout
+      - attach_workspace:
+          at: /tmp/coverage
+      - install_deps
+      - run:
+          name: concat lcov files to handle pronto-undercover
+          command: |
+            mkdir -p coverage/lcov
+            cat /tmp/coverage/*.lcov > coverage/lcov/coverage_default.lcov
+      - run:
+          name: run pronto
+          command: |
+            bundle exec pronto run -f github_pr -c origin/master
+
 workflows:
   build:
     jobs:
@@ -71,3 +101,9 @@ workflows:
       - test_backend:
           requires:
             - setup
+      - analyse_coverage:
+          requires:
+            - test_backend
+          filters:
+            branches:
+              ignore: master

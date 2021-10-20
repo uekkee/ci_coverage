@@ -1,0 +1,2 @@
+pronto-undercover:
+  lcov: coverage/lcov/coverage_default.lcov
