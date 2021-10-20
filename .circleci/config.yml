@@ -8,20 +8,25 @@ executors:
           RAILS_ENV: test
 
 commands:
+  load_deps:
+    description: install bundler and load bundle from cache
+    steps:
+      - run: |
+          gem install bundler -v 2.2.22
+          bundle config set path vendor/bundle
+      - restore_cache:
+          keys:
+            - dependencies-{{ .Environment.CACHE_VERSION }}-{{ checksum "Gemfile.lock" }}
+            - dependencies-{{ .Environment.CACHE_VERSION }}-
+
   install_deps:
     description: install bundle
     steps:
-      - restore_cache:
-          keys:
-            - dependencies-{{ checksum "Gemfile.lock" }}
-            - dependencies-
       - run: |
           sudo apt-get install cmake
-          gem install bundler -v 2.2.22
-          bundle config set path vendor/bundle
           bundle install --jobs=4 --retry=3
       - save_cache:
-          key: dependencies-{{ checksum "Gemfile.lock" }}
+          key: dependencies-{{ .Environment.CACHE_VERSION }}-{{ checksum "Gemfile.lock" }}
           paths:
             - vendor/bundle
 
@@ -64,6 +69,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace: *attach_workspace
+      - load_deps
       - install_deps
 
   test_backend:
@@ -72,7 +78,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace: *attach_workspace
-      - install_deps
+      - load_deps
       - run_rspec
       - store_test_results:
             path: tmp/test-results
@@ -84,7 +90,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: /tmp/coverage
-      - install_deps
+      - load_deps
       - run:
           name: concat lcov files to handle pronto-undercover
           command: |
@@ -102,7 +108,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: /tmp/coverage
-      - install_deps
+      - load_deps
       - run:
           name: generate coverage report
           command: |
