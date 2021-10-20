@@ -46,6 +46,7 @@ commands:
           command: |
             mkdir -p /tmp/coverage
             mv coverage/lcov/*.lcov /tmp/coverage/
+            mv coverage/.resultset.json "/tmp/coverage/.resultset-${CIRCLE_NODE_INDEX}.json"
       - persist_to_workspace:
           root: /tmp/coverage
           paths: .
@@ -92,7 +93,22 @@ jobs:
       - run:
           name: run pronto
           command: |
-            bundle exec pronto run -f github_pr -c origin/master
+            bundle exec pronto run -r undercover -f github_pr -c origin/master
+
+  report_coverage:
+    docker:
+      - image: circleci/ruby:3.0.2-node-browsers
+    steps:
+      - checkout
+      - attach_workspace:
+          at: /tmp/coverage
+      - install_deps
+      - run:
+          name: generate coverage report
+          command: |
+            bundle exec ruby -e "require 'simplecov'; SimpleCov.collate Dir['/tmp/coverage/.resultset*.json'], 'rails'"
+      - store_artifacts:
+          path: coverage
 
 workflows:
   build:
@@ -107,3 +123,6 @@ workflows:
           filters:
             branches:
               ignore: master
+      - report_coverage:
+          requires:
+            - test_backend
