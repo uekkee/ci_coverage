@@ -31,8 +31,6 @@ gem 'bootsnap', '>= 1.4.4', require: false
 group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console
   gem 'byebug', platforms: [:mri, :mingw, :x64_mingw]
-  gem 'pronto', '~> 0.11.0', require: false
-  gem 'pronto-undercover', require: false
   gem 'rspec-rails'
   gem 'rspec_junit_formatter'
   gem 'undercover', require: false
